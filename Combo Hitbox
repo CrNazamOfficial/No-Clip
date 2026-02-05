@@ -1,4 +1,3 @@
-
 _G.AirWalkEnabled = false
 _G.AirWalkHeight = 0
 _G.LockMovement = false
@@ -6,17 +5,13 @@ _G.LockMovement = false
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 local airPart = nil
 local walkConnection = nil
-local inputConnection = nil
 local jumpConnection = nil
 local lockConnection = nil
-local leftWall = nil
-local rightWall = nil
-local wallConnection = nil
+local lockedRotation = nil
 
 local function createAirWalkGUI()
     local gui = Instance.new("ScreenGui")
@@ -24,20 +19,23 @@ local function createAirWalkGUI()
     gui.Parent = game.CoreGui
     gui.ResetOnSpawn = false
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    local iconButton = Instance.new("ImageButton")
+    
+    -- ICON BUTTON
+    local iconButton = Instance.new("Frame")
     iconButton.Name = "MinimizedIcon"
     iconButton.Size = UDim2.new(0, 35, 0, 35)
     iconButton.Position = UDim2.new(0, 15, 0, 110)
     iconButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
     iconButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
     iconButton.BorderSizePixel = 2
-    iconButton.Image = ""
     iconButton.Visible = false
     iconButton.Active = true
     iconButton.Parent = gui
+    
     local iconCorner = Instance.new("UICorner")
     iconCorner.CornerRadius = UDim.new(0, 6)
     iconCorner.Parent = iconButton
+    
     local iconLabel = Instance.new("TextLabel")
     iconLabel.Size = UDim2.new(1, 0, 1, 0)
     iconLabel.BackgroundTransparency = 1
@@ -46,6 +44,14 @@ local function createAirWalkGUI()
     iconLabel.Font = Enum.Font.GothamBold
     iconLabel.TextSize = 16
     iconLabel.Parent = iconButton
+    
+    local iconClickButton = Instance.new("TextButton")
+    iconClickButton.Size = UDim2.new(1, 0, 1, 0)
+    iconClickButton.BackgroundTransparency = 1
+    iconClickButton.Text = ""
+    iconClickButton.Parent = iconButton
+    
+    -- MAIN FRAME
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
     mainFrame.Size = UDim2.new(0, 180, 0, 140)
@@ -56,19 +62,23 @@ local function createAirWalkGUI()
     mainFrame.Active = true
     mainFrame.Visible = true
     mainFrame.Parent = gui
+    
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 8)
     mainCorner.Parent = mainFrame
+    
     local dragHandle = Instance.new("Frame")
     dragHandle.Name = "DragHandle"
     dragHandle.Size = UDim2.new(1, 0, 0, 25)
     dragHandle.BackgroundTransparency = 1
     dragHandle.Active = true
     dragHandle.Parent = mainFrame
+    
     local header = Instance.new("Frame")
     header.Size = UDim2.new(1, 0, 0, 25)
     header.BackgroundTransparency = 1
     header.Parent = mainFrame
+    
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0.75, 0, 1, 0)
     title.Position = UDim2.new(0, 6, 0, 0)
@@ -79,6 +89,7 @@ local function createAirWalkGUI()
     title.TextSize = 12
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = header
+    
     local closeButton = Instance.new("TextButton")
     closeButton.Size = UDim2.new(0, 20, 0, 20)
     closeButton.Position = UDim2.new(1, -23, 0.5, -10)
@@ -90,17 +101,26 @@ local function createAirWalkGUI()
     closeButton.Font = Enum.Font.GothamBold
     closeButton.TextSize = 11
     closeButton.Parent = header
+    
     local closeCorner = Instance.new("UICorner")
     closeCorner.CornerRadius = UDim.new(0, 4)
     closeCorner.Parent = closeButton
-    closeButton.MouseEnter:Connect(function() closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50) end)
-    closeButton.MouseLeave:Connect(function() closeButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15) end)
+    
+    closeButton.MouseEnter:Connect(function()
+        closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    end)
+    
+    closeButton.MouseLeave:Connect(function()
+        closeButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    end)
+    
     local headerLine = Instance.new("Frame")
     headerLine.Size = UDim2.new(0.92, 0, 0, 1)
     headerLine.Position = UDim2.new(0.04, 0, 0, 26)
     headerLine.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
     headerLine.BorderSizePixel = 0
     headerLine.Parent = mainFrame
+    
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(0.92, 0, 0, 26)
     toggleBtn.Position = UDim2.new(0.04, 0, 0, 32)
@@ -112,9 +132,11 @@ local function createAirWalkGUI()
     toggleBtn.Font = Enum.Font.GothamBold
     toggleBtn.TextSize = 10
     toggleBtn.Parent = mainFrame
+    
     local toggleCorner = Instance.new("UICorner")
     toggleCorner.CornerRadius = UDim.new(0, 4)
     toggleCorner.Parent = toggleBtn
+    
     local lockBtn = Instance.new("TextButton")
     lockBtn.Size = UDim2.new(0.92, 0, 0, 26)
     lockBtn.Position = UDim2.new(0.04, 0, 0, 63)
@@ -126,9 +148,11 @@ local function createAirWalkGUI()
     lockBtn.Font = Enum.Font.GothamBold
     lockBtn.TextSize = 10
     lockBtn.Parent = mainFrame
+    
     local lockCorner = Instance.new("UICorner")
     lockCorner.CornerRadius = UDim.new(0, 4)
     lockCorner.Parent = lockBtn
+    
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Size = UDim2.new(0.92, 0, 0, 18)
     statusLabel.Position = UDim2.new(0.04, 0, 0, 94)
@@ -139,6 +163,7 @@ local function createAirWalkGUI()
     statusLabel.TextSize = 9
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = mainFrame
+    
     local creditLabel = Instance.new("TextLabel")
     creditLabel.Size = UDim2.new(1, 0, 0, 18)
     creditLabel.Position = UDim2.new(0, 0, 1, -19)
@@ -148,45 +173,49 @@ local function createAirWalkGUI()
     creditLabel.Font = Enum.Font.Gotham
     creditLabel.TextSize = 9
     creditLabel.Parent = mainFrame
+    
     local function updateAirWalk()
         if _G.AirWalkEnabled then
             if not airPart then
+                -- Create solid platform
                 airPart = Instance.new("Part")
                 airPart.Size = Vector3.new(10, 0.5, 10)
                 airPart.Anchored = true
-                airPart.Transparency = 0.7
+                airPart.Transparency = 0.5
                 airPart.CanCollide = true
-                airPart.Material = Enum.Material.ForceField
-                airPart.Color = Color3.fromRGB(255, 150, 50)
+                airPart.Material = Enum.Material.Neon
+                airPart.Color = Color3.fromRGB(80, 255, 80)
                 airPart.Parent = workspace
                 airPart.Name = "AirWalkPlatform_" .. player.UserId
+                
+                -- Make sure player can walk on it
                 for _, part in pairs(player.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        local NoCollide = Instance.new("NoCollisionConstraint")
-                        NoCollide.Part0 = airPart
-                        NoCollide.Part1 = part
-                        NoCollide.Parent = airPart
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        local noCollide = Instance.new("NoCollisionConstraint")
+                        noCollide.Part0 = airPart
+                        noCollide.Part1 = part
+                        noCollide.Parent = airPart
                     end
                 end
             end
+            
             if not walkConnection then
                 walkConnection = RunService.Heartbeat:Connect(function()
                     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         local hrp = player.Character.HumanoidRootPart
-                        local humanoid = player.Character:FindFirstChild("Humanoid")
+                        
                         if _G.AirWalkHeight == 0 then
                             airPart.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3.5, hrp.Position.Z)
                         else
                             airPart.CFrame = CFrame.new(hrp.Position.X, _G.AirWalkHeight, hrp.Position.Z)
                         end
-                        if humanoid then
-                            humanoid.PlatformStand = false
-                        end
+                        
                         airPart.CanCollide = true
                         airPart.Anchored = true
                     end
                 end)
             end
+            
             if not jumpConnection then
                 jumpConnection = RunService.Heartbeat:Connect(function()
                     if player.Character then
@@ -199,6 +228,7 @@ local function createAirWalkGUI()
                     end
                 end)
             end
+            
             statusLabel.Text = "Status: AirWalk Active"
         else
             if airPart then
@@ -214,98 +244,62 @@ local function createAirWalkGUI()
                 jumpConnection = nil
             end
             _G.AirWalkHeight = 0
-            if player.Character then
-                local humanoid = player.Character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid.PlatformStand = false
-                end
-            end
             if not _G.LockMovement then
                 statusLabel.Text = "Status: Ready"
             end
         end
     end
+    
     local function updateMoveLock()
         if _G.LockMovement then
-            if not leftWall then
-                leftWall = Instance.new("Part")
-                leftWall.Size = Vector3.new(0.2, 15, 15)
-                leftWall.Anchored = true
-                leftWall.CanCollide = true
-                leftWall.Transparency = 1
-                leftWall.Material = Enum.Material.ForceField
-                leftWall.Parent = workspace
-                leftWall.Name = "LeftWall_" .. player.UserId
-            end
-            if not rightWall then
-                rightWall = Instance.new("Part")
-                rightWall.Size = Vector3.new(0.2, 15, 15)
-                rightWall.Anchored = true
-                rightWall.CanCollide = true
-                rightWall.Transparency = 1
-                rightWall.Material = Enum.Material.ForceField
-                rightWall.Parent = workspace
-                rightWall.Name = "RightWall_" .. player.UserId
-            end
+            lockedRotation = nil
+            
             if not lockConnection then
-                local lockedRotation = nil
                 lockConnection = RunService.Heartbeat:Connect(function()
                     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         local hrp = player.Character.HumanoidRootPart
                         local humanoid = player.Character:FindFirstChild("Humanoid")
+                        
                         if humanoid then
+                            -- Lock rotation saat pertama kali aktif
                             if not lockedRotation then
-                                lockedRotation = hrp.CFrame.Rotation
+                                lockedRotation = hrp.CFrame.LookVector
                             end
-                            local currentPos = hrp.Position
-                            hrp.CFrame = CFrame.new(currentPos) * lockedRotation
-                            local moveDirection = humanoid.MoveDirection
-                            if moveDirection.Magnitude > 0 then
-                                local lookVector = hrp.CFrame.LookVector
-                                local forwardInput = moveDirection:Dot(lookVector)
-                                humanoid:Move(lookVector * forwardInput)
+                            
+                            -- Get movement input
+                            local moveVector = humanoid.MoveVector
+                            
+                            if moveVector.Magnitude > 0 then
+                                -- Calculate forward/backward only
+                                local forwardInput = moveVector:Dot(lockedRotation)
+                                
+                                -- Only allow forward/backward movement
+                                local newVelocity = lockedRotation * forwardInput * 16
+                                
+                                -- Apply movement
+                                hrp.CFrame = CFrame.new(hrp.Position + newVelocity * 0.016) * CFrame.lookAt(Vector3.new(0, 0, 0), lockedRotation)
+                            else
+                                -- Keep rotation locked even when not moving
+                                hrp.CFrame = CFrame.new(hrp.Position) * CFrame.lookAt(Vector3.new(0, 0, 0), lockedRotation)
                             end
                         end
                     end
                 end)
             end
-            if not wallConnection then
-                wallConnection = RunService.Heartbeat:Connect(function()
-                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        local hrp = player.Character.HumanoidRootPart
-                        local rightVector = hrp.CFrame.RightVector
-                        leftWall.CFrame = CFrame.new(hrp.Position - rightVector * 2.5) * CFrame.Angles(0, 0, 0)
-                        rightWall.CFrame = CFrame.new(hrp.Position + rightVector * 2.5) * CFrame.Angles(0, 0, 0)
-                        leftWall.CanCollide = true
-                        rightWall.CanCollide = true
-                        leftWall.Anchored = true
-                        rightWall.Anchored = true
-                    end
-                end)
-            end
+            
             statusLabel.Text = "Status: Movement Locked"
         else
-            if leftWall then
-                leftWall:Destroy()
-                leftWall = nil
-            end
-            if rightWall then
-                rightWall:Destroy()
-                rightWall = nil
-            end
             if lockConnection then
                 lockConnection:Disconnect()
                 lockConnection = nil
             end
-            if wallConnection then
-                wallConnection:Disconnect()
-                wallConnection = nil
-            end
+            lockedRotation = nil
             if not _G.AirWalkEnabled then
                 statusLabel.Text = "Status: Ready"
             end
         end
     end
+    
     toggleBtn.MouseButton1Click:Connect(function()
         _G.AirWalkEnabled = not _G.AirWalkEnabled
         if _G.AirWalkEnabled then
@@ -324,20 +318,7 @@ local function createAirWalkGUI()
         end
         updateAirWalk()
     end)
-    toggleBtn.MouseEnter:Connect(function()
-        if _G.AirWalkEnabled then
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(35, 120, 35)
-        else
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        end
-    end)
-    toggleBtn.MouseLeave:Connect(function()
-        if _G.AirWalkEnabled then
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(25, 100, 25)
-        else
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        end
-    end)
+    
     lockBtn.MouseButton1Click:Connect(function()
         _G.LockMovement = not _G.LockMovement
         if _G.LockMovement then
@@ -353,21 +334,9 @@ local function createAirWalkGUI()
         end
         updateMoveLock()
     end)
-    lockBtn.MouseEnter:Connect(function()
-        if _G.LockMovement then
-            lockBtn.BackgroundColor3 = Color3.fromRGB(120, 120, 35)
-        else
-            lockBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        end
-    end)
-    lockBtn.MouseLeave:Connect(function()
-        if _G.LockMovement then
-            lockBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 25)
-        else
-            lockBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        end
-    end)
+    
     local isMinimized = false
+    
     closeButton.MouseButton1Click:Connect(function()
         if not isMinimized then
             mainFrame.Visible = false
@@ -375,66 +344,107 @@ local function createAirWalkGUI()
             isMinimized = true
         end
     end)
-    iconButton.MouseButton1Click:Connect(function()
+    
+    iconClickButton.MouseButton1Click:Connect(function()
         if isMinimized then
             mainFrame.Visible = true
             iconButton.Visible = false
             isMinimized = false
         end
     end)
+    
+    -- DRAG FUNCTIONALITY MAIN FRAME
     local UIS = game:GetService("UserInputService")
-    local dragging,dragStart,startPos=false,nil,nil
+    local dragging, dragStart, startPos = false, nil, nil
+    
     dragHandle.InputBegan:Connect(function(input)
-        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-            dragging=true;dragStart=input.Position;startPos=mainFrame.Position
-            input.Changed:Connect(function()if input.UserInputState==Enum.UserInputState.End then dragging=false end end)
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if dragging and(input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch)then
-            local delta=input.Position-dragStart
-            mainFrame.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+delta.X,startPos.Y.Scale,startPos.Y.Offset+delta.Y)
-        end
-    end)
-    local iconDragging,iconDragStart,iconStartPos,dragThreshold,iconDragMoved=false,nil,nil,5,false
-    iconButton.InputBegan:Connect(function(input)
-        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
-            iconDragging=true;iconDragStart=input.Position;iconStartPos=iconButton.Position;iconDragMoved=false
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+            
             input.Changed:Connect(function()
-                if input.UserInputState==Enum.UserInputState.End then
-                    iconDragging=false
-                    if not iconDragMoved and isMinimized then mainFrame.Visible=true;iconButton.Visible=false;isMinimized=false end
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
                 end
             end)
         end
     end)
+    
     UIS.InputChanged:Connect(function(input)
-        if iconDragging and(input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch)then
-            local delta=input.Position-iconDragStart
-            if math.abs(delta.X)>dragThreshold or math.abs(delta.Y)>dragThreshold then iconDragMoved=true end
-            iconButton.Position=UDim2.new(iconStartPos.X.Scale,iconStartPos.X.Offset+delta.X,iconStartPos.Y.Scale,iconStartPos.Y.Offset+delta.Y)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
         end
     end)
+    
+    -- DRAG FUNCTIONALITY ICON
+    local iconDragging, iconDragStart, iconStartPos = false, nil, nil
+    local dragThreshold = 5
+    local iconDragMoved = false
+    
+    iconButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            iconDragging = true
+            iconDragStart = input.Position
+            iconStartPos = iconButton.Position
+            iconDragMoved = false
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    iconDragging = false
+                end
+            end)
+        end
+    end)
+    
+    UIS.InputChanged:Connect(function(input)
+        if iconDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - iconDragStart
+            
+            if math.abs(delta.X) > dragThreshold or math.abs(delta.Y) > dragThreshold then
+                iconDragMoved = true
+            end
+            
+            iconButton.Position = UDim2.new(
+                iconStartPos.X.Scale,
+                iconStartPos.X.Offset + delta.X,
+                iconStartPos.Y.Scale,
+                iconStartPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
     player.CharacterAdded:Connect(function()
         task.wait(0.5)
         if _G.AirWalkEnabled then
-            _G.AirWalkEnabled=false
+            _G.AirWalkEnabled = false
             updateAirWalk()
-            toggleBtn.Text="AirWalk: OFF"
-            toggleBtn.TextColor3=Color3.fromRGB(150,150,150)
-            toggleBtn.BackgroundColor3=Color3.fromRGB(25,25,25)
-            toggleBtn.BorderColor3=Color3.fromRGB(60,60,60)
+            toggleBtn.Text = "AirWalk: OFF"
+            toggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+            toggleBtn.BorderColor3 = Color3.fromRGB(60, 60, 60)
         end
         if _G.LockMovement then
-            _G.LockMovement=false
+            _G.LockMovement = false
             updateMoveLock()
-            lockBtn.Text="Lock Move: OFF"
-            lockBtn.TextColor3=Color3.fromRGB(150,150,150)
-            lockBtn.BackgroundColor3=Color3.fromRGB(25,25,25)
-            lockBtn.BorderColor3=Color3.fromRGB(60,60,60)
+            lockBtn.Text = "Lock Move: OFF"
+            lockBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+            lockBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+            lockBtn.BorderColor3 = Color3.fromRGB(60, 60, 60)
         end
     end)
 end
+
 createAirWalkGUI()
-print("Air Walk System V2 Loaded!")
-print("By: Nazam")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("  Air Walk System Loaded!")
+print("  By: Nazam")
+print("  ✓ Platform: SOLID")
+print("  ✓ Lock Movement: FORWARD ONLY")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━")
