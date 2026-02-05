@@ -13,6 +13,10 @@ local airPart = nil
 local walkConnection = nil
 local inputConnection = nil
 local jumpConnection = nil
+local lockConnection = nil
+local leftWall = nil
+local rightWall = nil
+local wallConnection = nil
 
 local function createAirWalkGUI()
     local gui = Instance.new("ScreenGui")
@@ -20,227 +24,130 @@ local function createAirWalkGUI()
     gui.Parent = game.CoreGui
     gui.ResetOnSpawn = false
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    local toggleIcon = Instance.new("Frame")
-    toggleIcon.Name = "ToggleIcon"
-    toggleIcon.Size = UDim2.new(0, 35, 0, 35)
-    toggleIcon.Position = UDim2.new(0, 10, 0, 80)
-    toggleIcon.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
-    toggleIcon.BorderSizePixel = 0
-    toggleIcon.Parent = gui
-    toggleIcon.Active = true
-    toggleIcon.Draggable = true
-    toggleIcon.Visible = false
-    
-    local iconStroke = Instance.new("UIStroke")
-    iconStroke.Color = Color3.fromRGB(85, 45, 255)
-    iconStroke.Thickness = 1.5
-    iconStroke.Parent = toggleIcon
-    
+    local iconButton = Instance.new("ImageButton")
+    iconButton.Name = "MinimizedIcon"
+    iconButton.Size = UDim2.new(0, 35, 0, 35)
+    iconButton.Position = UDim2.new(0, 15, 0, 110)
+    iconButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    iconButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
+    iconButton.BorderSizePixel = 2
+    iconButton.Image = ""
+    iconButton.Visible = false
+    iconButton.Active = true
+    iconButton.Parent = gui
     local iconCorner = Instance.new("UICorner")
     iconCorner.CornerRadius = UDim.new(0, 6)
-    iconCorner.Parent = toggleIcon
-    
+    iconCorner.Parent = iconButton
     local iconLabel = Instance.new("TextLabel")
     iconLabel.Size = UDim2.new(1, 0, 1, 0)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Text = "A"
     iconLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.TextSize = 14
-    iconLabel.Parent = toggleIcon
-    
-    local iconGradient = Instance.new("UIGradient")
-    iconGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(170, 130, 255))
-    }
-    iconGradient.Rotation = 90
-    iconGradient.Parent = iconLabel
-    
-    local iconButton = Instance.new("TextButton")
-    iconButton.Size = UDim2.new(1, 0, 1, 0)
-    iconButton.BackgroundTransparency = 1
-    iconButton.Text = ""
-    iconButton.Parent = toggleIcon
-    
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 90, 0, 90)
-    frame.Position = UDim2.new(0, 10, 0, 80)
-    frame.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
-    frame.BorderSizePixel = 0
-    frame.Parent = gui
-    frame.Active = true
-    frame.Draggable = true
-    frame.ClipsDescendants = true
-    
-    local frameStroke = Instance.new("UIStroke")
-    frameStroke.Color = Color3.fromRGB(85, 45, 255)
-    frameStroke.Thickness = 1.5
-    frameStroke.Parent = frame
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = frame
-    
-    local glow = Instance.new("ImageLabel")
-    glow.Name = "Glow"
-    glow.Size = UDim2.new(1, 30, 1, 30)
-    glow.Position = UDim2.new(0, -15, 0, -15)
-    glow.BackgroundTransparency = 1
-    glow.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
-    glow.ImageColor3 = Color3.fromRGB(85, 45, 255)
-    glow.ImageTransparency = 0.8
-    glow.ScaleType = Enum.ScaleType.Slice
-    glow.SliceCenter = Rect.new(10, 10, 118, 118)
-    glow.Parent = frame
-    glow.ZIndex = 0
-    
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 16, 0, 16)
-    closeBtn.Position = UDim2.new(1, -18, 0, 2)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-    closeBtn.BorderSizePixel = 0
-    closeBtn.Text = "X"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 70, 70)
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 8
-    closeBtn.AutoButtonColor = false
-    closeBtn.Parent = frame
-    
-    local closeStroke = Instance.new("UIStroke")
-    closeStroke.Color = Color3.fromRGB(255, 50, 50)
-    closeStroke.Thickness = 1
-    closeStroke.Parent = closeBtn
-    
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 3)
-    closeCorner.Parent = closeBtn
-    
+    iconLabel.TextSize = 16
+    iconLabel.Parent = iconButton
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 180, 0, 140)
+    mainFrame.Position = UDim2.new(0, 15, 0, 110)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    mainFrame.BorderColor3 = Color3.fromRGB(80, 255, 80)
+    mainFrame.BorderSizePixel = 2
+    mainFrame.Active = true
+    mainFrame.Visible = true
+    mainFrame.Parent = gui
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 8)
+    mainCorner.Parent = mainFrame
+    local dragHandle = Instance.new("Frame")
+    dragHandle.Name = "DragHandle"
+    dragHandle.Size = UDim2.new(1, 0, 0, 25)
+    dragHandle.BackgroundTransparency = 1
+    dragHandle.Active = true
+    dragHandle.Parent = mainFrame
+    local header = Instance.new("Frame")
+    header.Size = UDim2.new(1, 0, 0, 25)
+    header.BackgroundTransparency = 1
+    header.Parent = mainFrame
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -20, 0, 16)
+    title.Size = UDim2.new(0.75, 0, 1, 0)
+    title.Position = UDim2.new(0, 6, 0, 0)
     title.BackgroundTransparency = 1
-    title.Text = "AIR"
+    title.Text = "AIR WALK"
     title.TextColor3 = Color3.fromRGB(255, 255, 255)
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 8
-    title.TextYAlignment = Enum.TextYAlignment.Center
-    title.Parent = frame
-    
-    local titleGradient = Instance.new("UIGradient")
-    titleGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(170, 130, 255))
-    }
-    titleGradient.Rotation = 90
-    titleGradient.Parent = title
-    
-    local line = Instance.new("Frame")
-    line.Size = UDim2.new(0.85, 0, 0, 1)
-    line.Position = UDim2.new(0.075, 0, 0, 17)
-    line.BackgroundColor3 = Color3.fromRGB(85, 45, 255)
-    line.BorderSizePixel = 0
-    line.Parent = frame
-    
-    local lineGradient = Instance.new("UIGradient")
-    lineGradient.Color = ColorSequence.new{
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(85, 45, 255)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140, 80, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(85, 45, 255))
-    }
-    lineGradient.Parent = line
-    
+    title.TextSize = 12
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = header
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 20, 0, 20)
+    closeButton.Position = UDim2.new(1, -23, 0.5, -10)
+    closeButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    closeButton.BorderColor3 = Color3.fromRGB(80, 255, 80)
+    closeButton.BorderSizePixel = 1
+    closeButton.Text = "X"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.TextSize = 11
+    closeButton.Parent = header
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(0, 4)
+    closeCorner.Parent = closeButton
+    closeButton.MouseEnter:Connect(function() closeButton.BackgroundColor3 = Color3.fromRGB(255, 50, 50) end)
+    closeButton.MouseLeave:Connect(function() closeButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15) end)
+    local headerLine = Instance.new("Frame")
+    headerLine.Size = UDim2.new(0.92, 0, 0, 1)
+    headerLine.Position = UDim2.new(0.04, 0, 0, 26)
+    headerLine.BackgroundColor3 = Color3.fromRGB(80, 255, 80)
+    headerLine.BorderSizePixel = 0
+    headerLine.Parent = mainFrame
     local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(0.85, 0, 0, 20)
-    toggleBtn.Position = UDim2.new(0.075, 0, 0, 22)
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-    toggleBtn.BorderSizePixel = 0
-    toggleBtn.Text = "OFF"
-    toggleBtn.TextColor3 = Color3.fromRGB(255, 70, 70)
+    toggleBtn.Size = UDim2.new(0.92, 0, 0, 26)
+    toggleBtn.Position = UDim2.new(0.04, 0, 0, 32)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    toggleBtn.BorderColor3 = Color3.fromRGB(60, 60, 60)
+    toggleBtn.BorderSizePixel = 1
+    toggleBtn.Text = "AirWalk: OFF"
+    toggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     toggleBtn.Font = Enum.Font.GothamBold
-    toggleBtn.TextSize = 7
-    toggleBtn.AutoButtonColor = false
-    toggleBtn.Parent = frame
-    
-    local toggleStroke = Instance.new("UIStroke")
-    toggleStroke.Color = Color3.fromRGB(50, 50, 60)
-    toggleStroke.Thickness = 1
-    toggleStroke.Parent = toggleBtn
-    
+    toggleBtn.TextSize = 10
+    toggleBtn.Parent = mainFrame
     local toggleCorner = Instance.new("UICorner")
     toggleCorner.CornerRadius = UDim.new(0, 4)
     toggleCorner.Parent = toggleBtn
-
     local lockBtn = Instance.new("TextButton")
-    lockBtn.Size = UDim2.new(0.85, 0, 0, 20)
-    lockBtn.Position = UDim2.new(0.075, 0, 0, 46)
-    lockBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-    lockBtn.BorderSizePixel = 0
-    lockBtn.Text = "LOCK"
-    lockBtn.TextColor3 = Color3.fromRGB(255, 70, 70)
+    lockBtn.Size = UDim2.new(0.92, 0, 0, 26)
+    lockBtn.Position = UDim2.new(0.04, 0, 0, 63)
+    lockBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    lockBtn.BorderColor3 = Color3.fromRGB(60, 60, 60)
+    lockBtn.BorderSizePixel = 1
+    lockBtn.Text = "Lock Move: OFF"
+    lockBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     lockBtn.Font = Enum.Font.GothamBold
-    lockBtn.TextSize = 7
-    lockBtn.AutoButtonColor = false
-    lockBtn.Parent = frame
-    
-    local lockStroke = Instance.new("UIStroke")
-    lockStroke.Color = Color3.fromRGB(50, 50, 60)
-    lockStroke.Thickness = 1
-    lockStroke.Parent = lockBtn
-    
+    lockBtn.TextSize = 10
+    lockBtn.Parent = mainFrame
     local lockCorner = Instance.new("UICorner")
     lockCorner.CornerRadius = UDim.new(0, 4)
     lockCorner.Parent = lockBtn
-    
-    local credit = Instance.new("TextLabel")
-    credit.Size = UDim2.new(1, 0, 0, 14)
-    credit.Position = UDim2.new(0, 0, 1, -15)
-    credit.BackgroundTransparency = 1
-    credit.Text = "Nazam"
-    credit.TextColor3 = Color3.fromRGB(100, 100, 120)
-    credit.Font = Enum.Font.Gotham
-    credit.TextSize = 6
-    credit.Parent = frame
-    
-    local function tweenButton(button, props, duration)
-        local tween = TweenService:Create(button, TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad), props)
-        tween:Play()
-    end
-    
-    closeBtn.MouseButton1Click:Connect(function()
-        tweenButton(frame, {Size = UDim2.new(0, 0, 0, 0)}, 0.3)
-        task.wait(0.3)
-        frame.Visible = false
-        toggleIcon.Visible = true
-        toggleIcon.Position = frame.Position
-    end)
-    
-    closeBtn.MouseEnter:Connect(function()
-        tweenButton(closeBtn, {BackgroundColor3 = Color3.fromRGB(255, 50, 50)}, 0.1)
-        tweenButton(closeBtn, {TextColor3 = Color3.fromRGB(255, 255, 255)}, 0.1)
-    end)
-    
-    closeBtn.MouseLeave:Connect(function()
-        tweenButton(closeBtn, {BackgroundColor3 = Color3.fromRGB(20, 20, 28)}, 0.1)
-        tweenButton(closeBtn, {TextColor3 = Color3.fromRGB(255, 70, 70)}, 0.1)
-    end)
-    
-    iconButton.MouseButton1Click:Connect(function()
-        toggleIcon.Visible = false
-        frame.Visible = true
-        frame.Position = toggleIcon.Position
-        frame.Size = UDim2.new(0, 0, 0, 0)
-        tweenButton(frame, {Size = UDim2.new(0, 90, 0, 90)}, 0.3)
-    end)
-    
-    iconButton.MouseEnter:Connect(function()
-        tweenButton(toggleIcon, {BackgroundColor3 = Color3.fromRGB(20, 20, 30)}, 0.1)
-    end)
-    
-    iconButton.MouseLeave:Connect(function()
-        tweenButton(toggleIcon, {BackgroundColor3 = Color3.fromRGB(12, 12, 18)}, 0.1)
-    end)
-    
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Size = UDim2.new(0.92, 0, 0, 18)
+    statusLabel.Position = UDim2.new(0.04, 0, 0, 94)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = "Status: Ready"
+    statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.TextSize = 9
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.Parent = mainFrame
+    local creditLabel = Instance.new("TextLabel")
+    creditLabel.Size = UDim2.new(1, 0, 0, 18)
+    creditLabel.Position = UDim2.new(0, 0, 1, -19)
+    creditLabel.BackgroundTransparency = 1
+    creditLabel.Text = "By: Nazam"
+    creditLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
+    creditLabel.Font = Enum.Font.Gotham
+    creditLabel.TextSize = 9
+    creditLabel.Parent = mainFrame
     local function updateAirWalk()
         if _G.AirWalkEnabled then
             if not airPart then
@@ -249,31 +156,37 @@ local function createAirWalkGUI()
                 airPart.Anchored = true
                 airPart.Transparency = 0.7
                 airPart.CanCollide = true
-                airPart.Material = Enum.Material.Neon
+                airPart.Material = Enum.Material.ForceField
                 airPart.Color = Color3.fromRGB(255, 150, 50)
                 airPart.Parent = workspace
                 airPart.Name = "AirWalkPlatform_" .. player.UserId
+                for _, part in pairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        local NoCollide = Instance.new("NoCollisionConstraint")
+                        NoCollide.Part0 = airPart
+                        NoCollide.Part1 = part
+                        NoCollide.Parent = airPart
+                    end
+                end
             end
-            
             if not walkConnection then
-                walkConnection = RunService.RenderStepped:Connect(function()
+                walkConnection = RunService.Heartbeat:Connect(function()
                     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         local hrp = player.Character.HumanoidRootPart
                         local humanoid = player.Character:FindFirstChild("Humanoid")
-                        
                         if _G.AirWalkHeight == 0 then
                             airPart.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3.5, hrp.Position.Z)
                         else
                             airPart.CFrame = CFrame.new(hrp.Position.X, _G.AirWalkHeight, hrp.Position.Z)
                         end
-                        
                         if humanoid then
                             humanoid.PlatformStand = false
                         end
+                        airPart.CanCollide = true
+                        airPart.Anchored = true
                     end
                 end)
             end
-            
             if not jumpConnection then
                 jumpConnection = RunService.Heartbeat:Connect(function()
                     if player.Character then
@@ -286,154 +199,242 @@ local function createAirWalkGUI()
                     end
                 end)
             end
+            statusLabel.Text = "Status: AirWalk Active"
         else
             if airPart then
                 airPart:Destroy()
                 airPart = nil
             end
-            
             if walkConnection then
                 walkConnection:Disconnect()
                 walkConnection = nil
             end
-            
             if jumpConnection then
                 jumpConnection:Disconnect()
                 jumpConnection = nil
             end
-            
             _G.AirWalkHeight = 0
-            
             if player.Character then
                 local humanoid = player.Character:FindFirstChild("Humanoid")
                 if humanoid then
                     humanoid.PlatformStand = false
                 end
             end
+            if not _G.LockMovement then
+                statusLabel.Text = "Status: Ready"
+            end
         end
     end
-    
     local function updateMoveLock()
         if _G.LockMovement then
-            if not inputConnection then
-                inputConnection = RunService.RenderStepped:Connect(function()
+            if not leftWall then
+                leftWall = Instance.new("Part")
+                leftWall.Size = Vector3.new(0.2, 15, 15)
+                leftWall.Anchored = true
+                leftWall.CanCollide = true
+                leftWall.Transparency = 1
+                leftWall.Material = Enum.Material.ForceField
+                leftWall.Parent = workspace
+                leftWall.Name = "LeftWall_" .. player.UserId
+            end
+            if not rightWall then
+                rightWall = Instance.new("Part")
+                rightWall.Size = Vector3.new(0.2, 15, 15)
+                rightWall.Anchored = true
+                rightWall.CanCollide = true
+                rightWall.Transparency = 1
+                rightWall.Material = Enum.Material.ForceField
+                rightWall.Parent = workspace
+                rightWall.Name = "RightWall_" .. player.UserId
+            end
+            if not lockConnection then
+                local lockedRotation = nil
+                lockConnection = RunService.Heartbeat:Connect(function()
                     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         local hrp = player.Character.HumanoidRootPart
-                        local currentVel = hrp.Velocity
-                        hrp.Velocity = Vector3.new(0, currentVel.Y, currentVel.Z)
+                        local humanoid = player.Character:FindFirstChild("Humanoid")
+                        if humanoid then
+                            if not lockedRotation then
+                                lockedRotation = hrp.CFrame.Rotation
+                            end
+                            local currentPos = hrp.Position
+                            hrp.CFrame = CFrame.new(currentPos) * lockedRotation
+                            local moveDirection = humanoid.MoveDirection
+                            if moveDirection.Magnitude > 0 then
+                                local lookVector = hrp.CFrame.LookVector
+                                local forwardInput = moveDirection:Dot(lookVector)
+                                humanoid:Move(lookVector * forwardInput)
+                            end
+                        end
                     end
                 end)
             end
+            if not wallConnection then
+                wallConnection = RunService.Heartbeat:Connect(function()
+                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local hrp = player.Character.HumanoidRootPart
+                        local rightVector = hrp.CFrame.RightVector
+                        leftWall.CFrame = CFrame.new(hrp.Position - rightVector * 2.5) * CFrame.Angles(0, 0, 0)
+                        rightWall.CFrame = CFrame.new(hrp.Position + rightVector * 2.5) * CFrame.Angles(0, 0, 0)
+                        leftWall.CanCollide = true
+                        rightWall.CanCollide = true
+                        leftWall.Anchored = true
+                        rightWall.Anchored = true
+                    end
+                end)
+            end
+            statusLabel.Text = "Status: Movement Locked"
         else
-            if inputConnection then
-                inputConnection:Disconnect()
-                inputConnection = nil
+            if leftWall then
+                leftWall:Destroy()
+                leftWall = nil
+            end
+            if rightWall then
+                rightWall:Destroy()
+                rightWall = nil
+            end
+            if lockConnection then
+                lockConnection:Disconnect()
+                lockConnection = nil
+            end
+            if wallConnection then
+                wallConnection:Disconnect()
+                wallConnection = nil
+            end
+            if not _G.AirWalkEnabled then
+                statusLabel.Text = "Status: Ready"
             end
         end
     end
-
     toggleBtn.MouseButton1Click:Connect(function()
         _G.AirWalkEnabled = not _G.AirWalkEnabled
-        
         if _G.AirWalkEnabled then
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 _G.AirWalkHeight = player.Character.HumanoidRootPart.Position.Y - 3.5
             end
-            
-            toggleBtn.Text = "ON"
-            tweenButton(toggleBtn, {
-                TextColor3 = Color3.fromRGB(100, 255, 150),
-                BackgroundColor3 = Color3.fromRGB(25, 45, 35)
-            })
-            tweenButton(toggleStroke, {
-                Color = Color3.fromRGB(85, 45, 255)
-            })
+            toggleBtn.Text = "AirWalk: ON"
+            toggleBtn.TextColor3 = Color3.fromRGB(80, 255, 80)
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(25, 100, 25)
+            toggleBtn.BorderColor3 = Color3.fromRGB(80, 255, 80)
         else
-            toggleBtn.Text = "OFF"
-            tweenButton(toggleBtn, {
-                TextColor3 = Color3.fromRGB(255, 70, 70),
-                BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-            })
-            tweenButton(toggleStroke, {
-                Color = Color3.fromRGB(50, 50, 60)
-            })
+            toggleBtn.Text = "AirWalk: OFF"
+            toggleBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+            toggleBtn.BorderColor3 = Color3.fromRGB(60, 60, 60)
         end
-        
         updateAirWalk()
     end)
-    
     toggleBtn.MouseEnter:Connect(function()
         if _G.AirWalkEnabled then
-            tweenButton(toggleBtn, {BackgroundColor3 = Color3.fromRGB(35, 55, 45)}, 0.1)
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(35, 120, 35)
         else
-            tweenButton(toggleBtn, {BackgroundColor3 = Color3.fromRGB(50, 30, 30)}, 0.1)
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         end
     end)
-    
     toggleBtn.MouseLeave:Connect(function()
         if _G.AirWalkEnabled then
-            tweenButton(toggleBtn, {BackgroundColor3 = Color3.fromRGB(25, 45, 35)}, 0.1)
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(25, 100, 25)
         else
-            tweenButton(toggleBtn, {BackgroundColor3 = Color3.fromRGB(20, 20, 28)}, 0.1)
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
         end
     end)
-    
     lockBtn.MouseButton1Click:Connect(function()
         _G.LockMovement = not _G.LockMovement
-        
         if _G.LockMovement then
-            lockBtn.Text = "LOCKED"
-            tweenButton(lockBtn, {
-                TextColor3 = Color3.fromRGB(255, 200, 100),
-                BackgroundColor3 = Color3.fromRGB(45, 35, 25)
-            })
-            tweenButton(lockStroke, {
-                Color = Color3.fromRGB(255, 150, 50)
-            })
+            lockBtn.Text = "Lock Move: ON"
+            lockBtn.TextColor3 = Color3.fromRGB(255, 200, 100)
+            lockBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 25)
+            lockBtn.BorderColor3 = Color3.fromRGB(255, 255, 80)
         else
-            lockBtn.Text = "LOCK"
-            tweenButton(lockBtn, {
-                TextColor3 = Color3.fromRGB(255, 70, 70),
-                BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-            })
-            tweenButton(lockStroke, {
-                Color = Color3.fromRGB(50, 50, 60)
-            })
+            lockBtn.Text = "Lock Move: OFF"
+            lockBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+            lockBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+            lockBtn.BorderColor3 = Color3.fromRGB(60, 60, 60)
         end
-        
         updateMoveLock()
     end)
-    
     lockBtn.MouseEnter:Connect(function()
         if _G.LockMovement then
-            tweenButton(lockBtn, {BackgroundColor3 = Color3.fromRGB(55, 45, 30)}, 0.1)
+            lockBtn.BackgroundColor3 = Color3.fromRGB(120, 120, 35)
         else
-            tweenButton(lockBtn, {BackgroundColor3 = Color3.fromRGB(50, 30, 30)}, 0.1)
+            lockBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         end
     end)
-    
     lockBtn.MouseLeave:Connect(function()
         if _G.LockMovement then
-            tweenButton(lockBtn, {BackgroundColor3 = Color3.fromRGB(45, 35, 25)}, 0.1)
+            lockBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 25)
         else
-            tweenButton(lockBtn, {BackgroundColor3 = Color3.fromRGB(20, 20, 28)}, 0.1)
+            lockBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
         end
     end)
-    
+    local isMinimized = false
+    closeButton.MouseButton1Click:Connect(function()
+        if not isMinimized then
+            mainFrame.Visible = false
+            iconButton.Visible = true
+            isMinimized = true
+        end
+    end)
+    iconButton.MouseButton1Click:Connect(function()
+        if isMinimized then
+            mainFrame.Visible = true
+            iconButton.Visible = false
+            isMinimized = false
+        end
+    end)
+    local UIS = game:GetService("UserInputService")
+    local dragging,dragStart,startPos=false,nil,nil
+    dragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+            dragging=true;dragStart=input.Position;startPos=mainFrame.Position
+            input.Changed:Connect(function()if input.UserInputState==Enum.UserInputState.End then dragging=false end end)
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if dragging and(input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch)then
+            local delta=input.Position-dragStart
+            mainFrame.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+delta.X,startPos.Y.Scale,startPos.Y.Offset+delta.Y)
+        end
+    end)
+    local iconDragging,iconDragStart,iconStartPos,dragThreshold,iconDragMoved=false,nil,nil,5,false
+    iconButton.InputBegan:Connect(function(input)
+        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+            iconDragging=true;iconDragStart=input.Position;iconStartPos=iconButton.Position;iconDragMoved=false
+            input.Changed:Connect(function()
+                if input.UserInputState==Enum.UserInputState.End then
+                    iconDragging=false
+                    if not iconDragMoved and isMinimized then mainFrame.Visible=true;iconButton.Visible=false;isMinimized=false end
+                end
+            end)
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if iconDragging and(input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch)then
+            local delta=input.Position-iconDragStart
+            if math.abs(delta.X)>dragThreshold or math.abs(delta.Y)>dragThreshold then iconDragMoved=true end
+            iconButton.Position=UDim2.new(iconStartPos.X.Scale,iconStartPos.X.Offset+delta.X,iconStartPos.Y.Scale,iconStartPos.Y.Offset+delta.Y)
+        end
+    end)
     player.CharacterAdded:Connect(function()
         task.wait(0.5)
         if _G.AirWalkEnabled then
-            _G.AirWalkEnabled = false
+            _G.AirWalkEnabled=false
             updateAirWalk()
-            toggleBtn.Text = "OFF"
-            toggleBtn.TextColor3 = Color3.fromRGB(255, 70, 70)
-            toggleBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
-            toggleStroke.Color = Color3.fromRGB(50, 50, 60)
+            toggleBtn.Text="AirWalk: OFF"
+            toggleBtn.TextColor3=Color3.fromRGB(150,150,150)
+            toggleBtn.BackgroundColor3=Color3.fromRGB(25,25,25)
+            toggleBtn.BorderColor3=Color3.fromRGB(60,60,60)
+        end
+        if _G.LockMovement then
+            _G.LockMovement=false
+            updateMoveLock()
+            lockBtn.Text="Lock Move: OFF"
+            lockBtn.TextColor3=Color3.fromRGB(150,150,150)
+            lockBtn.BackgroundColor3=Color3.fromRGB(25,25,25)
+            lockBtn.BorderColor3=Color3.fromRGB(60,60,60)
         end
     end)
 end
-
 createAirWalkGUI()
-
 print("Air Walk System V2 Loaded!")
-print("By: Nazam | Optimized & Enhanced")
+print("By: Nazam")
