@@ -3,17 +3,13 @@ _G.AirWalkHeight = 0
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 local airPart = nil
 local walkConnection = nil
 local jumpConnection = nil
-local isOnGround = false
-local stepHeight = 6 -- berapa unit naik tiap loncat
 
 local function createAirWalkGUI()
-    -- Hapus GUI lama kalau ada
     if game.CoreGui:FindFirstChild("AirWalkGUI") then
         game.CoreGui.AirWalkGUI:Destroy()
     end
@@ -24,7 +20,7 @@ local function createAirWalkGUI()
     gui.ResetOnSpawn = false
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-    -- ICON (minimized)
+    -- ICON minimized
     local iconButton = Instance.new("Frame")
     iconButton.Name = "MinimizedIcon"
     iconButton.Size = UDim2.new(0, 36, 0, 36)
@@ -36,9 +32,7 @@ local function createAirWalkGUI()
     iconButton.Active = true
     iconButton.Parent = gui
 
-    local iconCorner = Instance.new("UICorner")
-    iconCorner.CornerRadius = UDim.new(0, 6)
-    iconCorner.Parent = iconButton
+    Instance.new("UICorner", iconButton).CornerRadius = UDim.new(0, 6)
 
     local iconLabel = Instance.new("TextLabel")
     iconLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -67,18 +61,14 @@ local function createAirWalkGUI()
     mainFrame.Visible = true
     mainFrame.Parent = gui
 
-    local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 8)
-    mainCorner.Parent = mainFrame
+    Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
 
-    -- Header drag area
     local dragHandle = Instance.new("Frame")
     dragHandle.Size = UDim2.new(1, 0, 0, 24)
     dragHandle.BackgroundTransparency = 1
     dragHandle.Active = true
     dragHandle.Parent = mainFrame
 
-    -- Title
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0.75, 0, 0, 24)
     title.Position = UDim2.new(0, 8, 0, 0)
@@ -90,10 +80,9 @@ local function createAirWalkGUI()
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.Parent = mainFrame
 
-    -- Close button
     local closeBtn = Instance.new("TextButton")
     closeBtn.Size = UDim2.new(0, 20, 0, 20)
-    closeBtn.Position = UDim2.new(1, -24, 0.5, -22)
+    closeBtn.Position = UDim2.new(1, -24, 0, 2)
     closeBtn.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
     closeBtn.BorderColor3 = Color3.fromRGB(80, 255, 80)
     closeBtn.BorderSizePixel = 1
@@ -103,18 +92,11 @@ local function createAirWalkGUI()
     closeBtn.TextSize = 10
     closeBtn.Parent = mainFrame
 
-    local closeBtnCorner = Instance.new("UICorner")
-    closeBtnCorner.CornerRadius = UDim.new(0, 4)
-    closeBtnCorner.Parent = closeBtn
+    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 4)
 
-    closeBtn.MouseEnter:Connect(function()
-        closeBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
-    end)
-    closeBtn.MouseLeave:Connect(function()
-        closeBtn.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
-    end)
+    closeBtn.MouseEnter:Connect(function() closeBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40) end)
+    closeBtn.MouseLeave:Connect(function() closeBtn.BackgroundColor3 = Color3.fromRGB(12, 12, 12) end)
 
-    -- Divider
     local divider = Instance.new("Frame")
     divider.Size = UDim2.new(0.9, 0, 0, 1)
     divider.Position = UDim2.new(0.05, 0, 0, 25)
@@ -122,7 +104,6 @@ local function createAirWalkGUI()
     divider.BorderSizePixel = 0
     divider.Parent = mainFrame
 
-    -- Toggle button
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(0.9, 0, 0, 28)
     toggleBtn.Position = UDim2.new(0.05, 0, 0, 31)
@@ -135,11 +116,8 @@ local function createAirWalkGUI()
     toggleBtn.TextSize = 10
     toggleBtn.Parent = mainFrame
 
-    local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0, 5)
-    toggleCorner.Parent = toggleBtn
+    Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 5)
 
-    -- Status label
     local statusLabel = Instance.new("TextLabel")
     statusLabel.Size = UDim2.new(0.9, 0, 0, 16)
     statusLabel.Position = UDim2.new(0.05, 0, 0, 64)
@@ -151,7 +129,6 @@ local function createAirWalkGUI()
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = mainFrame
 
-    -- Credit
     local creditLabel = Instance.new("TextLabel")
     creditLabel.Size = UDim2.new(1, 0, 0, 14)
     creditLabel.Position = UDim2.new(0, 0, 1, -16)
@@ -166,30 +143,21 @@ local function createAirWalkGUI()
     -- LOGIKA AIRWALK
     -- =====================
     local function stopAirWalk()
-        if airPart then
-            airPart:Destroy()
-            airPart = nil
-        end
-        if walkConnection then
-            walkConnection:Disconnect()
-            walkConnection = nil
-        end
-        if jumpConnection then
-            jumpConnection:Disconnect()
-            jumpConnection = nil
-        end
+        if airPart then airPart:Destroy(); airPart = nil end
+        if walkConnection then walkConnection:Disconnect(); walkConnection = nil end
+        if jumpConnection then jumpConnection:Disconnect(); jumpConnection = nil end
         _G.AirWalkHeight = 0
-        isOnGround = false
     end
 
     local function startAirWalk()
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            _G.AirWalkHeight = player.Character.HumanoidRootPart.Position.Y - 3.2
-        end
+        if not (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then return end
+
+        -- Set height awal pas di kaki
+        _G.AirWalkHeight = player.Character.HumanoidRootPart.Position.Y - 3.2
 
         if not airPart then
             airPart = Instance.new("Part")
-            airPart.Name = "AirWalkPlatform_" .. player.UserId
+            airPart.Name = "AirWalkPlatform"
             airPart.Size = Vector3.new(12, 0.4, 12)
             airPart.Anchored = true
             airPart.CanCollide = true
@@ -200,38 +168,28 @@ local function createAirWalkGUI()
             airPart.Parent = workspace
         end
 
-        -- Heartbeat: ikuti posisi horizontal player
+        -- Platform selalu ikut posisi X/Z player, Y dari _G.AirWalkHeight
+        -- TAPI: saat player sedang di udara (lagi loncat), sembunyikan/nonaktifkan collision
+        -- supaya platform tidak menghalangi
         if not walkConnection then
             walkConnection = RunService.Heartbeat:Connect(function()
                 if not (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then return end
                 local hrp = player.Character.HumanoidRootPart
-                airPart.CFrame = CFrame.new(hrp.Position.X, _G.AirWalkHeight, hrp.Position.Z)
-            end)
-        end
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                if not humanoid then return end
 
-        -- Deteksi jump → naikkan platform (efek tangga)
-        if not jumpConnection then
-            local wasJumping = false
-            jumpConnection = RunService.Heartbeat:Connect(function()
-                if not (player.Character and player.Character:FindFirstChild("Humanoid") and player.Character:FindFirstChild("HumanoidRootPart")) then return end
-                local humanoid = player.Character.Humanoid
-                local hrp = player.Character.HumanoidRootPart
                 local state = humanoid:GetState()
+                local inAir = (state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall)
 
-                local jumping = (state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall)
-
-                if jumping and not wasJumping then
-                    -- Player baru loncat: angkat target height
-                    _G.AirWalkHeight = _G.AirWalkHeight + stepHeight
-                    wasJumping = true
-                elseif not jumping and wasJumping then
-                    -- Player landing kembali ke platform
-                    wasJumping = false
-                    -- Snap height ke posisi player saat ini supaya smooth
-                    task.wait(0.05)
-                    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                        _G.AirWalkHeight = player.Character.HumanoidRootPart.Position.Y - 3.2
-                    end
+                if inAir then
+                    -- Saat di udara: platform CanCollide off, geser jauh ke bawah supaya tidak ganggu
+                    airPart.CanCollide = false
+                    airPart.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 50, hrp.Position.Z)
+                else
+                    -- Saat di tanah/platform: snap height ke bawah kaki lalu aktifkan collision
+                    _G.AirWalkHeight = hrp.Position.Y - 3.2
+                    airPart.CFrame = CFrame.new(hrp.Position.X, _G.AirWalkHeight, hrp.Position.Z)
+                    airPart.CanCollide = true
                 end
             end)
         end
@@ -263,7 +221,6 @@ local function createAirWalkGUI()
         updateUI()
     end)
 
-    -- Reset saat respawn
     player.CharacterAdded:Connect(function()
         task.wait(0.5)
         if _G.AirWalkEnabled then
@@ -273,27 +230,21 @@ local function createAirWalkGUI()
         end
     end)
 
-    -- =====================
     -- CLOSE / MINIMIZE
-    -- =====================
     local isMinimized = false
-
     closeBtn.MouseButton1Click:Connect(function()
         mainFrame.Visible = false
         iconButton.Visible = true
         isMinimized = true
     end)
-
     iconClickBtn.MouseButton1Click:Connect(function()
         mainFrame.Visible = true
         iconButton.Visible = false
         isMinimized = false
     end)
 
-    -- =====================
-    -- DRAG - MAIN FRAME
-    -- =====================
-    local UIS2 = game:GetService("UserInputService")
+    -- DRAG MAIN FRAME
+    local UIS = game:GetService("UserInputService")
     local dragging, dragStart, startPos = false, nil, nil
 
     dragHandle.InputBegan:Connect(function(input)
@@ -307,35 +258,30 @@ local function createAirWalkGUI()
         end
     end)
 
-    UIS2.InputChanged:Connect(function(input)
+    UIS.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 
-    -- =====================
-    -- DRAG - ICON
-    -- =====================
+    -- DRAG ICON
     local iconDragging, iconDragStart, iconStartPos = false, nil, nil
-    local iconMoved = false
 
     iconButton.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             iconDragging = true
             iconDragStart = input.Position
             iconStartPos = iconButton.Position
-            iconMoved = false
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then iconDragging = false end
             end)
         end
     end)
 
-    UIS2.InputChanged:Connect(function(input)
+    UIS.InputChanged:Connect(function(input)
         if iconDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - iconDragStart
-            if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then iconMoved = true end
             iconButton.Position = UDim2.new(iconStartPos.X.Scale, iconStartPos.X.Offset + delta.X, iconStartPos.Y.Scale, iconStartPos.Y.Offset + delta.Y)
         end
     end)
