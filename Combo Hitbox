@@ -1,5 +1,4 @@
 _G.AirWalkEnabled = false
-_G.AirWalkHeight = 0
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,7 +6,7 @@ local player = Players.LocalPlayer
 
 local airPart = nil
 local walkConnection = nil
-local jumpConnection = nil
+local currentHeight = 0
 
 local function createAirWalkGUI()
     if game.CoreGui:FindFirstChild("AirWalkGUI") then
@@ -18,11 +17,9 @@ local function createAirWalkGUI()
     gui.Name = "AirWalkGUI"
     gui.Parent = game.CoreGui
     gui.ResetOnSpawn = false
-    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     -- ICON minimized
     local iconButton = Instance.new("Frame")
-    iconButton.Name = "MinimizedIcon"
     iconButton.Size = UDim2.new(0, 36, 0, 36)
     iconButton.Position = UDim2.new(0, 15, 0, 110)
     iconButton.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
@@ -31,7 +28,6 @@ local function createAirWalkGUI()
     iconButton.Visible = false
     iconButton.Active = true
     iconButton.Parent = gui
-
     Instance.new("UICorner", iconButton).CornerRadius = UDim.new(0, 6)
 
     local iconLabel = Instance.new("TextLabel")
@@ -51,16 +47,13 @@ local function createAirWalkGUI()
 
     -- MAIN FRAME
     local mainFrame = Instance.new("Frame")
-    mainFrame.Name = "MainFrame"
     mainFrame.Size = UDim2.new(0, 170, 0, 100)
     mainFrame.Position = UDim2.new(0, 15, 0, 110)
     mainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
     mainFrame.BorderColor3 = Color3.fromRGB(80, 255, 80)
     mainFrame.BorderSizePixel = 2
     mainFrame.Active = true
-    mainFrame.Visible = true
     mainFrame.Parent = gui
-
     Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 8)
 
     local dragHandle = Instance.new("Frame")
@@ -91,7 +84,6 @@ local function createAirWalkGUI()
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.TextSize = 10
     closeBtn.Parent = mainFrame
-
     Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 4)
 
     closeBtn.MouseEnter:Connect(function() closeBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40) end)
@@ -115,7 +107,6 @@ local function createAirWalkGUI()
     toggleBtn.Font = Enum.Font.GothamBold
     toggleBtn.TextSize = 10
     toggleBtn.Parent = mainFrame
-
     Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 5)
 
     local statusLabel = Instance.new("TextLabel")
@@ -140,59 +131,89 @@ local function createAirWalkGUI()
     creditLabel.Parent = mainFrame
 
     -- =====================
-    -- LOGIKA AIRWALK
+    -- CORE AIRWALK LOGIC
     -- =====================
+
     local function stopAirWalk()
-        if airPart then airPart:Destroy(); airPart = nil end
         if walkConnection then walkConnection:Disconnect(); walkConnection = nil end
-        if jumpConnection then jumpConnection:Disconnect(); jumpConnection = nil end
-        _G.AirWalkHeight = 0
+        if airPart then airPart:Destroy(); airPart = nil end
+        currentHeight = 0
     end
 
     local function startAirWalk()
         if not (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then return end
 
-        -- Set height awal pas di kaki
-        _G.AirWalkHeight = player.Character.HumanoidRootPart.Position.Y - 3.2
+        local hrp = player.Character.HumanoidRootPart
+        -- Set platform tepat di bawah kaki saat ini
+        currentHeight = hrp.Position.Y - 3.2
 
-        if not airPart then
-            airPart = Instance.new("Part")
-            airPart.Name = "AirWalkPlatform"
-            airPart.Size = Vector3.new(12, 0.4, 12)
-            airPart.Anchored = true
-            airPart.CanCollide = true
-            airPart.Transparency = 0.45
-            airPart.Material = Enum.Material.Neon
-            airPart.Color = Color3.fromRGB(80, 255, 80)
-            airPart.CastShadow = false
-            airPart.Parent = workspace
-        end
+        -- Buat platform
+        if airPart then airPart:Destroy() end
+        airPart = Instance.new("Part")
+        airPart.Name = "AirWalkPlatform"
+        airPart.Size = Vector3.new(14, 0.4, 14)
+        airPart.Anchored = true
+        airPart.CanCollide = true
+        airPart.Transparency = 0.4
+        airPart.Material = Enum.Material.Neon
+        airPart.Color = Color3.fromRGB(80, 255, 80)
+        airPart.CastShadow = false
+        airPart.Parent = workspace
+        -- Posisi awal langsung di bawah kaki
+        airPart.CFrame = CFrame.new(hrp.Position.X, currentHeight, hrp.Position.Z)
 
-        -- Platform selalu ikut posisi X/Z player, Y dari _G.AirWalkHeight
-        -- TAPI: saat player sedang di udara (lagi loncat), sembunyikan/nonaktifkan collision
-        -- supaya platform tidak menghalangi
-        if not walkConnection then
-            walkConnection = RunService.Heartbeat:Connect(function()
-                if not (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) then return end
-                local hrp = player.Character.HumanoidRootPart
-                local humanoid = player.Character:FindFirstChild("Humanoid")
-                if not humanoid then return end
+        local prevState = nil
 
-                local state = humanoid:GetState()
-                local inAir = (state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall)
+        if walkConnection then walkConnection:Disconnect() end
+        walkConnection = RunService.Heartbeat:Connect(function()
+            if not (player.Character
+                and player.Character:FindFirstChild("HumanoidRootPart")
+                and player.Character:FindFirstChild("Humanoid")) then return end
 
-                if inAir then
-                    -- Saat di udara: platform CanCollide off, geser jauh ke bawah supaya tidak ganggu
-                    airPart.CanCollide = false
-                    airPart.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 50, hrp.Position.Z)
+            local h = player.Character.HumanoidRootPart
+            local humanoid = player.Character.Humanoid
+            local state = humanoid:GetState()
+
+            local inAir = (
+                state == Enum.HumanoidStateType.Jumping or
+                state == Enum.HumanoidStateType.Freefall
+            )
+
+            local justLanded = (
+                prevState ~= nil and
+                (prevState == Enum.HumanoidStateType.Freefall or prevState == Enum.HumanoidStateType.Jumping) and
+                not inAir
+            )
+
+            if inAir then
+                -- Di udara: platform diam di currentHeight, collision off
+                -- Platform tidak bergerak sama sekali, hanya ikut X/Z
+                airPart.CanCollide = false
+                airPart.CFrame = CFrame.new(h.Position.X, currentHeight, h.Position.Z)
+            else
+                if justLanded then
+                    -- Baru landing: snap height ke posisi kaki sekarang
+                    -- Tunggu 1 frame supaya physics settle
+                    task.defer(function()
+                        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and airPart then
+                            currentHeight = player.Character.HumanoidRootPart.Position.Y - 3.2
+                            airPart.CFrame = CFrame.new(
+                                player.Character.HumanoidRootPart.Position.X,
+                                currentHeight,
+                                player.Character.HumanoidRootPart.Position.Z
+                            )
+                            airPart.CanCollide = true
+                        end
+                    end)
                 else
-                    -- Saat di tanah/platform: snap height ke bawah kaki lalu aktifkan collision
-                    _G.AirWalkHeight = hrp.Position.Y - 3.2
-                    airPart.CFrame = CFrame.new(hrp.Position.X, _G.AirWalkHeight, hrp.Position.Z)
+                    -- Jalan biasa: ikuti X/Z, height tetap
+                    airPart.CFrame = CFrame.new(h.Position.X, currentHeight, h.Position.Z)
                     airPart.CanCollide = true
                 end
-            end)
-        end
+            end
+
+            prevState = state
+        end)
     end
 
     local function updateUI()
